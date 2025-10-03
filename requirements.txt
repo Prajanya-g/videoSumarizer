@@ -1,0 +1,45 @@
+# Core FastAPI dependencies
+fastapi==0.104.1
+uvicorn[standard]==0.24.0
+python-multipart==0.0.6
+
+# Pydantic for data validation
+pydantic==2.5.0
+
+# OpenAI Whisper for transcription
+openai-whisper==20231117
+
+# Faster Whisper (preferred for better performance)
+faster-whisper==0.10.0
+
+# OpenAI API for LLM ranking
+openai==1.3.7
+
+# Machine learning dependencies for TextRank
+scikit-learn==1.3.2
+numpy==1.24.3
+
+# spaCy for sentence splitting in TextRank
+spacy==3.7.2
+
+# File handling and utilities
+python-magic==0.4.27
+psutil==5.9.6
+
+# HTTP client for API calls
+httpx==0.25.2
+
+# Async file operations
+aiofiles==24.1.0
+
+# JSON handling
+orjson==3.9.10
+
+# Logging and monitoring
+structlog==23.2.0
+
+# Development and testing
+pytest==7.4.3
+pytest-asyncio==0.21.1
+black==23.11.0
+flake8==6.1.0

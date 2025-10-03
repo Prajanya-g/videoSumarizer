@@ -1,0 +1,32 @@
+{
+    "pythonVersion": "3.13",
+    "pythonPlatform": "Darwin",
+    "executionEnvironments": [
+        {
+            "root": "/Users/prajanya/Desktop/networks/assignment1/video-summarizer",
+            "pythonPath": "/Users/prajanya/Desktop/networks/assignment1/video-summarizer/venv/bin/python",
+            "extraPaths": [
+                "/Users/prajanya/Desktop/networks/assignment1/video-summarizer/venv/lib/python3.13/site-packages",
+                "/Users/prajanya/Desktop/networks/assignment1/video-summarizer/backend"
+            ]
+        }
+    ],
+    "include": [
+        "backend/**/*.py",
+        "frontend/**/*.py"
+    ],
+    "exclude": [
+        "**/node_modules",
+        "**/__pycache__",
+        "**/.pytest_cache",
+        "**/venv"
+    ],
+    "typeCheckingMode": "basic",
+    "useLibraryCodeForTypes": true,
+    "reportMissingImports": "warning",
+    "reportMissingTypeStubs": false,
+    "reportGeneralTypeIssues": "warning",
+    "reportOptionalMemberAccess": "warning",
+    "reportOptionalSubscript": "warning",
+    "reportPrivateImportUsage": "warning"
+}
