@@ -88,10 +88,10 @@ async def process_video_background(job_id: str, target_seconds: int):
             job_state["status"] = "processing"
             job_state["updated_at"] = datetime.now().isoformat()
             await save_job_state(job_id, job_state)
-            print(f"📝 Job status updated to 'processing'")
+            print("📝 Job status updated to 'processing'")
         
         # Initialize and run the pipeline
-        print(f"🔧 Initializing video processing pipeline...")
+        print("🔧 Initializing video processing pipeline...")
         pipeline = VideoSummarizerPipeline()
         await pipeline.run(job_id, target_seconds)
         
@@ -112,7 +112,7 @@ async def process_video_background(job_id: str, target_seconds: int):
             job_state["error"] = str(e)
             job_state["updated_at"] = datetime.now().isoformat()
             await save_job_state(job_id, job_state)
-            print(f"📝 Job status updated to 'failed'")
+            print("📝 Job status updated to 'failed'")
 
 @app.get("/")
 async def root():
@@ -127,7 +127,7 @@ async def upload_video(
     """
     Upload a video file and start the summarization process.
     """
-    if not file.content_type.startswith('video/'):
+    if not file.content_type or not file.content_type.startswith('video/'):
         raise HTTPException(status_code=400, detail="File must be a video")
     
     # Generate unique job ID
@@ -162,7 +162,8 @@ async def upload_video(
         
         # Start background processing pipeline
         print(f"\n🚀 Starting background processing for job: {job_id}")
-        task = asyncio.create_task(process_video_background(job_id, target_seconds))
+        # Store task to prevent garbage collection
+        _background_task = asyncio.create_task(process_video_background(job_id, target_seconds))
         # Don't store task in job_state as it's not JSON serializable
         # The task will run in background and update job_state separately
         
