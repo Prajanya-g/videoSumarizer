@@ -256,7 +256,7 @@ class TranscriptionService:
         duration = await self._get_audio_duration(audio_path)
         num_chunks = int(duration / self.chunk_duration) + 1
         
-        print(f"   📊 Audio duration: {duration:.1f}s - processing in {num_chunks} chunks of {self.chunk_duration}s each")
+        logger.info(f"Audio duration: {duration:.1f}s - processing in {num_chunks} chunks of {self.chunk_duration}s each")
         
         all_segments = []
         
@@ -267,7 +267,7 @@ class TranscriptionService:
             if start_time >= duration:
                 break
             
-            print(f"   🎧 Processing chunk {i+1}/{num_chunks}: {start_time:.1f}s - {end_time:.1f}s")
+            logger.debug(f"Processing chunk {i+1}/{num_chunks}: {start_time:.1f}s - {end_time:.1f}s")
             
             # Extract chunk
             chunk_path = await self._extract_chunk(audio_path, start_time, end_time)
@@ -282,7 +282,7 @@ class TranscriptionService:
                     segment.end += start_time
                 
                 all_segments.extend(chunk_segments)
-                print(f"   ✅ Chunk {i+1} completed: {len(chunk_segments)} segments")
+                logger.debug(f"Chunk {i+1} completed: {len(chunk_segments)} segments")
                 
             finally:
                 # Clean up chunk file

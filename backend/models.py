@@ -2,21 +2,42 @@
 Pydantic models for the video summarizer API.
 """
 
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 from enum import Enum
 from typing import Optional, List, Dict, Any
 from datetime import datetime
+from backend.schemas import JobStatus
 
-class JobStatus(str, Enum):
-    """Job processing status."""
-    UPLOADED = "uploaded"
-    PROCESSING = "processing"
-    TRANSCRIBING = "transcribing"
-    RANKING = "ranking"
-    SELECTING = "selecting"
-    RENDERING = "rendering"
-    COMPLETED = "completed"
-    FAILED = "failed"
+# User models
+class UserCreate(BaseModel):
+    """User creation model."""
+    email: EmailStr
+    password: str
+    full_name: Optional[str] = None
+
+class UserResponse(BaseModel):
+    """User response model."""
+    id: int
+    email: str
+    full_name: Optional[str]
+    created_at: datetime
+    
+    class Config:
+        from_attributes = True
+
+class UserLogin(BaseModel):
+    """User login model."""
+    email: EmailStr
+    password: str
+
+class UserUpdate(BaseModel):
+    """User update model."""
+    full_name: Optional[str] = None
+    email: Optional[EmailStr] = None
+
+class UserDelete(BaseModel):
+    """User deletion confirmation model."""
+    confirm: bool = False
 
 class JobRequest(BaseModel):
     """Request model for job creation."""
@@ -24,13 +45,47 @@ class JobRequest(BaseModel):
 
 class JobResponse(BaseModel):
     """Response model for job status."""
-    job_id: str
+    id: int
+    user_id: int
+    title: Optional[str]
+    target_seconds: int
     status: JobStatus
-    message: Optional[str] = None
-    progress: Optional[float] = None
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
-    error: Optional[str] = None
+    original_filename: Optional[str]
+    original_duration: Optional[int]
+    summary_duration: Optional[int]
+    compression_ratio: Optional[str]
+    created_at: datetime
+    updated_at: datetime
+    error_message: Optional[str] = None
+    
+    # File URLs (computed from paths)
+    video_url: Optional[str] = None
+    thumbnail_url: Optional[str] = None
+    srt_url: Optional[str] = None
+    
+    class Config:
+        from_attributes = True
+
+class JobCreate(BaseModel):
+    """Job creation model."""
+    title: Optional[str] = None
+    target_seconds: int
+
+class JobUpdate(BaseModel):
+    """Job update model."""
+    title: Optional[str] = None
+    target_seconds: Optional[int] = None
+
+class JobDelete(BaseModel):
+    """Job deletion confirmation model."""
+    confirm: bool = False
+
+class JobListQuery(BaseModel):
+    """Query parameters for job listing."""
+    limit: Optional[int] = 10
+    offset: Optional[int] = 0
+    q: Optional[str] = None  # Search query
+    status: Optional[str] = None  # Filter by status
 
 class TranscriptionSegment(BaseModel):
     """Individual transcription segment."""

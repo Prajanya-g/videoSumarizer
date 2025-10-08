@@ -282,7 +282,7 @@ class VideoRenderer:
     async def _run_ffmpeg(self, cmd: List[str]) -> None:
         """Run FFmpeg command with robust error handling."""
         try:
-            print(f"   🔧 Running FFmpeg: {' '.join(cmd)}")
+            logger.debug(f"Running FFmpeg: {' '.join(cmd)}")
             process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,

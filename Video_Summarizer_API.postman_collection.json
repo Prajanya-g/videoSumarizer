@@ -1,0 +1,1058 @@
+{
+  "info": {
+    "name": "Video Summarizer API",
+    "description": "A comprehensive video summarization service that processes videos to create highlights and transcripts.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "version": "1.0.0"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "job_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Health Check",
+      "item": [
+        {
+          "name": "Get API Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/",
+              "host": ["{{base_url}}"],
+              "path": [""]
+            },
+            "description": "Check if the API is running and healthy"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/",
+                  "host": ["{{base_url}}"],
+                  "path": [""]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Video Summarizer API is running\",\n  \"version\": \"1.0.0\",\n  \"status\": \"healthy\",\n  \"timestamp\": \"2024-01-15T10:30:00.000Z\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"full_name\": \"John Doe\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/register",
+              "host": ["{{base_url}}"],
+              "path": ["register"]
+            },
+            "description": "Register a new user account and return JWT token"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\",\n  \"full_name\": \"John Doe\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/register",
+                  "host": ["{{base_url}}"],
+                  "path": ["register"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"user@example.com\",\n    \"full_name\": \"John Doe\",\n    \"created_at\": \"2024-01-15T10:30:00.000Z\"\n  },\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"token_type\": \"bearer\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Login User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/login",
+              "host": ["{{base_url}}"],
+              "path": ["login"]
+            },
+            "description": "Authenticate user with email and password"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password123\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/login",
+                  "host": ["{{base_url}}"],
+                  "path": ["login"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"user\": {\n    \"id\": 1,\n    \"email\": \"user@example.com\",\n    \"full_name\": \"John Doe\",\n    \"created_at\": \"2024-01-15T10:30:00.000Z\"\n  },\n  \"access_token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...\",\n  \"token_type\": \"bearer\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": ["{{base_url}}"],
+              "path": ["me"]
+            },
+            "description": "Get current user profile"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"email\": \"user@example.com\",\n  \"full_name\": \"John Doe\",\n  \"created_at\": \"2024-01-15T10:30:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"full_name\": \"John Smith\",\n  \"email\": \"john.smith@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": ["{{base_url}}"],
+              "path": ["me"]
+            },
+            "description": "Update current user profile"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"full_name\": \"John Smith\",\n  \"email\": \"john.smith@example.com\"\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"email\": \"john.smith@example.com\",\n  \"full_name\": \"John Smith\",\n  \"created_at\": \"2024-01-15T10:30:00.000Z\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete User Account",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/me",
+              "host": ["{{base_url}}"],
+              "path": ["me"]
+            },
+            "description": "Delete current user account"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/me",
+                  "host": ["{{base_url}}"],
+                  "path": ["me"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"User account deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Job Management",
+      "item": [
+        {
+          "name": "Get User Jobs",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs?limit=10&offset=0&q=&status=",
+              "host": ["{{base_url}}"],
+              "path": ["jobs"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Maximum number of jobs to return"
+                },
+                {
+                  "key": "offset",
+                  "value": "0",
+                  "description": "Number of jobs to skip for pagination"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Search query for job title or filename"
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter by job status"
+                }
+              ]
+            },
+            "description": "Get all jobs for the current user with optional filtering and pagination"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/jobs?limit=10&offset=0&q=&status=",
+                  "host": ["{{base_url}}"],
+                  "path": ["jobs"],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    },
+                    {
+                      "key": "offset",
+                      "value": "0"
+                    },
+                    {
+                      "key": "q",
+                      "value": ""
+                    },
+                    {
+                      "key": "status",
+                      "value": ""
+                    }
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": 1,\n    \"title\": \"My Presentation\",\n    \"status\": \"completed\",\n    \"target_seconds\": 60,\n    \"created_at\": \"2024-01-15T10:30:00.000Z\",\n    \"updated_at\": \"2024-01-15T10:35:00.000Z\",\n    \"original_filename\": \"presentation.mp4\",\n    \"video_url\": \"/jobs/1/highlights.mp4\",\n    \"thumbnail_url\": \"/jobs/1/thumb.jpg\",\n    \"transcript_url\": \"/jobs/1/transcript.srt\",\n    \"error_message\": null\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Get Job Details",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "{{job_id}}"]
+            },
+            "description": "Get specific job details"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/jobs/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["jobs", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"title\": \"My Presentation\",\n  \"status\": \"completed\",\n  \"target_seconds\": 60,\n  \"created_at\": \"2024-01-15T10:30:00.000Z\",\n  \"updated_at\": \"2024-01-15T10:35:00.000Z\",\n  \"original_filename\": \"presentation.mp4\",\n  \"video_url\": \"/jobs/1/highlights.mp4\",\n  \"thumbnail_url\": \"/jobs/1/thumb.jpg\",\n  \"transcript_url\": \"/jobs/1/transcript.srt\",\n  \"error_message\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Upload Video",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": [],
+                  "description": "Video file to upload"
+                },
+                {
+                  "key": "title",
+                  "value": "My Video",
+                  "type": "text",
+                  "description": "Job title (optional)"
+                },
+                {
+                  "key": "target_seconds",
+                  "value": "60",
+                  "type": "text",
+                  "description": "Target duration in seconds"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/upload",
+              "host": ["{{base_url}}"],
+              "path": ["upload"]
+            },
+            "description": "Upload a video file and create a new processing job"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "file",
+                      "type": "file",
+                      "src": []
+                    },
+                    {
+                      "key": "title",
+                      "value": "My Video",
+                      "type": "text"
+                    },
+                    {
+                      "key": "target_seconds",
+                      "value": "60",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/upload",
+                  "host": ["{{base_url}}"],
+                  "path": ["upload"]
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"title\": \"My Video\",\n  \"status\": \"uploaded\",\n  \"target_seconds\": 60,\n  \"created_at\": \"2024-01-15T10:30:00.000Z\",\n  \"updated_at\": \"2024-01-15T10:30:00.000Z\",\n  \"original_filename\": \"video.mp4\",\n  \"video_url\": null,\n  \"thumbnail_url\": null,\n  \"transcript_url\": null,\n  \"error_message\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Update Job",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Title\",\n  \"target_seconds\": 90\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/jobs/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "{{job_id}}"]
+            },
+            "description": "Update job details (title, target duration)"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Updated Title\",\n  \"target_seconds\": 90\n}"
+                },
+                "url": {
+                  "raw": "{{base_url}}/jobs/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["jobs", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": 1,\n  \"title\": \"Updated Title\",\n  \"status\": \"completed\",\n  \"target_seconds\": 90,\n  \"created_at\": \"2024-01-15T10:30:00.000Z\",\n  \"updated_at\": \"2024-01-15T10:40:00.000Z\",\n  \"original_filename\": \"video.mp4\",\n  \"video_url\": \"/jobs/1/highlights.mp4\",\n  \"thumbnail_url\": \"/jobs/1/thumb.jpg\",\n  \"transcript_url\": \"/jobs/1/transcript.srt\",\n  \"error_message\": null\n}"
+            }
+          ]
+        },
+        {
+          "name": "Delete Job",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "{{job_id}}"]
+            },
+            "description": "Delete a job and all associated files"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/jobs/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["jobs", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Job deleted successfully\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "File Serving",
+      "item": [
+        {
+          "name": "Get Highlights Video",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs/{{job_id}}/highlights.mp4",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "{{job_id}}", "highlights.mp4"]
+            },
+            "description": "Serve the processed highlights video"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/jobs/1/highlights.mp4",
+                  "host": ["{{base_url}}"],
+                  "path": ["jobs", "1", "highlights.mp4"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "video/mp4"
+                }
+              ],
+              "cookie": [],
+              "body": "[Binary video data]"
+            }
+          ]
+        },
+        {
+          "name": "Get Thumbnail",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs/{{job_id}}/thumb.jpg",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "{{job_id}}", "thumb.jpg"]
+            },
+            "description": "Serve the video thumbnail image"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/jobs/1/thumb.jpg",
+                  "host": ["{{base_url}}"],
+                  "path": ["jobs", "1", "thumb.jpg"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "image/jpeg"
+                }
+              ],
+              "cookie": [],
+              "body": "[Binary image data]"
+            }
+          ]
+        },
+        {
+          "name": "Get Transcript",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/jobs/{{job_id}}/transcript.srt",
+              "host": ["{{base_url}}"],
+              "path": ["jobs", "{{job_id}}", "transcript.srt"]
+            },
+            "description": "Serve the transcript file in SRT format"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/jobs/1/transcript.srt",
+                  "host": ["{{base_url}}"],
+                  "path": ["jobs", "1", "transcript.srt"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "cookie": [],
+              "body": "1\n00:00:00,000 --> 00:00:15,500\nWelcome to this presentation about video summarization.\n\n2\n00:00:15,500 --> 00:00:30,200\nToday we'll cover the key concepts and implementation details."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Results",
+      "item": [
+        {
+          "name": "Get Job Result",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{jwt_token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/result/{{job_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["result", "{{job_id}}"]
+            },
+            "description": "Get job processing result with video segments and transcript"
+          },
+          "response": [
+            {
+              "name": "Success Response",
+              "originalRequest": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{jwt_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/result/1",
+                  "host": ["{{base_url}}"],
+                  "path": ["result", "1"]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"status\": \"done\",\n  \"video_url\": \"/jobs/1/highlights.mp4\",\n  \"srt_url\": \"/jobs/1/transcript.srt\",\n  \"jump_to\": {\n    \"segments\": [\n      {\n        \"start\": 0.0,\n        \"end\": 15.5,\n        \"text\": \"Welcome to this presentation about video summarization.\"\n      },\n      {\n        \"start\": 15.5,\n        \"end\": 30.2,\n        \"text\": \"Today we'll cover the key concepts and implementation details.\"\n      }\n    ]\n  }\n}"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set JWT token from login response",
+          "if (pm.response && pm.response.json() && pm.response.json().access_token) {",
+          "    pm.collectionVariables.set('jwt_token', pm.response.json().access_token);",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-extract job_id from upload response",
+          "if (pm.response && pm.response.json() && pm.response.json().id) {",
+          "    pm.collectionVariables.set('job_id', pm.response.json().id);",
+          "}"
+        ]
+      }
+    }
+  ]
+}

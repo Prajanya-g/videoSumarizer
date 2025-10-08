@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class LLMRanker:
     """LLM-based ranking service using OpenAI API."""
     
-    def __init__(self, api_key: str = None, model: str = "gpt-3.5-turbo"):
+    def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"):
         """
         Initialize the LLM ranker.
         
@@ -44,12 +44,12 @@ class LLMRanker:
             Dict with highlights array
         """
         if not self.available:
-            raise Exception("LLM ranker not available - no API key or connection failed")
+            raise RuntimeError("LLM ranker not available - no API key or connection failed")
             
         try:
             # Test connection first
             if not await self.test_connection():
-                raise Exception("LLM service not accessible")
+                raise RuntimeError("LLM service not accessible")
                 
             # Chunk transcript into manageable pieces
             chunks = self._chunk_transcript(transcript_segments)
@@ -118,7 +118,10 @@ class LLMRanker:
                 )
                 
                 # Parse response
-                highlights = self._parse_llm_response(response.choices[0].message.content)
+                content = response.choices[0].message.content
+                if content is None:
+                    raise ValueError("Empty response from LLM")
+                highlights = self._parse_llm_response(content)
                 
                 # Validate and cap highlights
                 validated_highlights = self._validate_highlights(highlights, chunk_segments)
@@ -137,23 +140,76 @@ class LLMRanker:
         """Create the prompt for LLM ranking."""
         segments_json = json.dumps(segments, indent=2)
         
-        return f"""You are selecting highlights from a video transcript with timestamps.
-Goal: pick the most informative moments so a viewer gets the gist within {target_seconds}s.
+        return f"""You are a video summarization expert. Create the perfect {target_seconds}-second highlight reel from this transcript.
 
-Return STRICT JSON:
-{{"highlights":[{{"start":float,"end":float,"score":0.0-1.0,"label":"short","reason":"short"}}]}}
+## 🎯 TASK
+Select the BEST moments that tell the complete story in EXACTLY {target_seconds} seconds.
 
-Rules:
-- Use transcript segment timestamps; don't invent times.
-- Prefer moments that contain conclusions, definitions, numbers, or emotional peaks.
-- Avoid filler and repetition.
-- Each highlight 2–15s; prefer natural sentence boundaries.
-- IMPORTANT: Aim for total duration close to {target_seconds}s. If you select too many highlights, prioritize the most important ones.
-- Focus on key insights, main points, and memorable moments.
-- Avoid redundant or repetitive content.
+## 📋 SELECT THE BEST:
+- Key insights and important information
+- Conclusions and takeaways
+- Actionable advice and practical tips
+- Memorable quotes and emotional moments
+- Data points and statistics
+- Problem-solution pairs
 
-INPUT (segments):
-{segments_json}"""
+## ⏱️ CRITICAL REQUIREMENTS:
+- Total duration: EXACTLY {target_seconds} seconds (not more, not less)
+- Maximum 6 segments (not 38!)
+- Each segment: 8-15 seconds long
+- Spread across timeline (beginning, middle, end)
+- Quality over quantity - be VERY selective
+
+## 🔍 QUALITY CHECKS
+Before selecting each highlight, ask:
+- Does this advance the main narrative?
+- Is this information essential for understanding?
+- Does this connect logically to other highlights?
+- Would a viewer understand the context without additional segments?
+- Is this segment temporally diverse from other selected highlights?
+
+## 📍 TEMPORAL DISTRIBUTION STRATEGY
+- **Beginning (0-25%)**: Include opening context, problem statement, or key introduction
+- **Middle (25-75%)**: Cover main content, examples, explanations, and developments
+- **End (75-100%)**: Include conclusions, takeaways, and final thoughts
+- **Avoid clustering**: Don't select multiple segments from the same time period
+- **Balance coverage**: Ensure all major topics/aspects are represented
+
+## 📊 OUTPUT FORMAT
+Return STRICT JSON only:
+```json
+{{
+  "highlights": [
+    {{
+      "start": 45.2,
+      "end": 52.8,
+      "score": 0.9,
+      "label": "Key insight about...",
+      "reason": "Contains main conclusion with supporting data"
+    }}
+  ]
+}}
+```
+
+## 🚫 AVOID
+- Selecting segments that are too short (< 2 seconds) unless they contain critical information
+- Creating highlights that don't connect to each other
+- Including repetitive or redundant content
+- Selecting segments with poor audio quality or unclear speech
+- Choosing highlights that require extensive context to understand
+- Artificially limiting segment length - let content determine appropriate duration
+
+## 📝 SEGMENT ANALYSIS
+For each potential highlight, consider:
+- **Content Value**: How much essential information does it contain?
+- **Narrative Position**: Where does it fit in the overall story?
+- **Clarity**: Is the information clearly communicated?
+- **Uniqueness**: Does it add something not covered elsewhere?
+
+INPUT TRANSCRIPT SEGMENTS:
+{segments_json}
+
+Remember: You're creating a mini-documentary that tells the complete story in {target_seconds} seconds. Every second counts - make it compelling and informative."""
     
     def _parse_llm_response(self, response: str) -> List[Dict]:
         """Parse LLM response and extract highlights."""
@@ -206,20 +262,18 @@ INPUT (segments):
                 label = str(highlight.get("label", ""))
                 reason = str(highlight.get("reason", ""))
                 
-                # Validate duration (2-15 seconds)
+                # Enhanced duration validation (flexible for different video types)
                 duration = end - start
                 if duration < 2.0:
-                    # Extend to minimum 2 seconds
+                    # Extend to minimum 2 seconds for better context
                     end = start + 2.0
-                elif duration > 15.0:
-                    # Cap to maximum 15 seconds
-                    end = start + 15.0
+                # Remove artificial upper limit - let the AI decide appropriate segment length
                 
                 # Validate against segment boundaries
                 start, end = self._clamp_to_segments(start, end, segments)
                 
-                # Only add if we have a valid range
-                if end > start:
+                # Quality checks
+                if self._is_quality_highlight(start, end, score, segments):
                     validated.append({
                         "start": start,
                         "end": end,
@@ -227,12 +281,99 @@ INPUT (segments):
                         "label": label,
                         "reason": reason
                     })
+                else:
+                    logger.debug(f"Highlight filtered out due to quality checks: {start}-{end}")
                     
             except (ValueError, KeyError) as e:
                 logger.warning(f"Invalid highlight skipped: {e}")
                 continue
         
-        return validated
+        # Sort by score and apply final quality filters
+        validated.sort(key=lambda x: x["score"], reverse=True)
+        return self._apply_final_quality_filters(validated)
+    
+    def _is_quality_highlight(self, start: float, end: float, score: float, segments: List[Dict]) -> bool:
+        """Check if highlight meets quality standards."""
+        # Must have meaningful score
+        if score < 0.3:
+            return False
+        
+        # Must have reasonable duration (flexible for different content types)
+        duration = end - start
+        if duration < 1.0:  # Only filter out very short segments
+            return False
+        
+        # Check if the segment contains meaningful content
+        for seg in segments:
+            if seg["start"] <= start <= seg["end"] and seg["start"] <= end <= seg["end"]:
+                text = seg["text"].strip()
+                # Filter out very short or repetitive content
+                if len(text) < 20 or self._is_repetitive_content(text):
+                    return False
+                break
+        
+        return True
+    
+    def _is_repetitive_content(self, text: str) -> bool:
+        """Check if text contains repetitive patterns."""
+        words = text.lower().split()
+        if len(words) < 5:
+            return False
+        
+        # Check for repeated phrases
+        word_counts = {}
+        for word in words:
+            word_counts[word] = word_counts.get(word, 0) + 1
+        
+        # If any word appears more than 30% of the time, it's repetitive
+        max_frequency = max(word_counts.values()) / len(words)
+        return max_frequency > 0.3
+    
+    def _apply_final_quality_filters(self, highlights: List[Dict]) -> List[Dict]:
+        """Apply final quality filters to ensure coherent highlights."""
+        if not highlights:
+            return highlights
+        
+        # Remove overlapping highlights
+        filtered = []
+        for highlight in highlights:
+            is_overlapping = False
+            for existing in filtered:
+                if self._highlights_overlap(highlight, existing):
+                    # Keep the higher-scored highlight
+                    if highlight["score"] > existing["score"]:
+                        filtered.remove(existing)
+                        break
+                    else:
+                        is_overlapping = True
+                        break
+            
+            if not is_overlapping:
+                filtered.append(highlight)
+        
+        # Ensure temporal coherence (highlights should flow logically)
+        return self._ensure_temporal_coherence(filtered)
+    
+    def _highlights_overlap(self, h1: Dict, h2: Dict) -> bool:
+        """Check if two highlights overlap in time."""
+        return not (h1["end"] <= h2["start"] or h2["end"] <= h1["start"])
+    
+    def _ensure_temporal_coherence(self, highlights: List[Dict]) -> List[Dict]:
+        """Ensure highlights are in temporal order and have good spacing."""
+        # Sort by start time
+        highlights.sort(key=lambda x: x["start"])
+        
+        # Remove highlights that are too close together (less than 5 seconds apart)
+        filtered = []
+        last_end = 0
+        
+        for highlight in highlights:
+            if (highlight["start"] >= last_end + 5.0 or  # 5-second minimum gap
+                highlight["score"] > 0.8):  # Keep high-scoring highlights even if close
+                filtered.append(highlight)
+                last_end = highlight["end"]
+        
+        return filtered
     
     def _clamp_to_segments(self, start: float, end: float, segments: List[Dict]) -> tuple:
         """Clamp highlight times to valid segment boundaries."""
@@ -245,7 +386,9 @@ INPUT (segments):
             end_segment = self._find_nearest_end_segment(end, segments)
         
         # Clamp to segment boundaries
-        return self._clamp_to_boundaries(start, end, start_segment, end_segment)
+        if start_segment and end_segment:
+            return self._clamp_to_boundaries(start, end, start_segment, end_segment)
+        return start, end
     
     def _find_containing_segments(self, start: float, end: float, segments: List[Dict]) -> tuple:
         """Find segments that contain the start and end times."""
