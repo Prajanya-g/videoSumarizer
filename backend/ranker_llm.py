@@ -1,5 +1,9 @@
 """
 LLM-based ranking service for segment importance scoring.
+
+This module provides AI-powered ranking of video transcript segments using
+OpenAI's GPT models. It analyzes transcript content to identify the most
+important segments for video summarization.
 """
 
 import json
@@ -12,21 +16,29 @@ from openai import AsyncOpenAI
 logger = logging.getLogger(__name__)
 
 class LLMRanker:
-    """LLM-based ranking service using OpenAI API."""
+    """
+    LLM-based ranking service using OpenAI API.
+    
+    Uses GPT models to analyze transcript segments and score their importance
+    for video summarization. Handles chunking, retry logic, and error recovery.
+    """
     
     def __init__(self, api_key: Optional[str] = None, model: str = "gpt-3.5-turbo"):
         """
-        Initialize the LLM ranker.
+        Initialize the LLM ranker with OpenAI client.
+        
+        Sets up the OpenAI client and configuration for segment ranking.
+        Handles initialization errors gracefully by setting availability flag.
         
         Args:
             api_key: OpenAI API key (if None, will use environment variable)
-            model: OpenAI model to use
+            model: OpenAI model to use for ranking (default: gpt-3.5-turbo)
         """
         try:
             self.client = AsyncOpenAI(api_key=api_key)
             self.model = model
-            self.max_tokens_per_chunk = 3000  # ~2-3k tokens
-            self.max_retries = 3
+            self.max_tokens_per_chunk = 3000  # ~2-3k tokens per chunk to avoid context limits
+            self.max_retries = 3  # Maximum retry attempts for API calls
             self.available = True
         except Exception as e:
             logger.warning(f"LLM ranker initialization failed: {e}")
@@ -34,14 +46,21 @@ class LLMRanker:
     
     async def rank_segments(self, transcript_segments: List[Dict], target_seconds: int) -> Dict[str, Any]:
         """
-        Rank transcription segments by importance using LLM.
+        Rank transcription segments by importance using LLM analysis.
+        
+        Processes transcript segments through GPT to identify the most important
+        content for video summarization. Handles chunking for large transcripts
+        and combines results from multiple API calls.
         
         Args:
             transcript_segments: List of segment dicts with start, end, text
-            target_seconds: Target duration for highlights
+            target_seconds: Target duration for highlights in seconds
             
         Returns:
-            Dict with highlights array
+            Dict with highlights array containing ranked segments
+            
+        Raises:
+            RuntimeError: If LLM ranker is not available or API fails
         """
         if not self.available:
             raise RuntimeError("LLM ranker not available - no API key or connection failed")
@@ -143,7 +162,7 @@ class LLMRanker:
         return f"""You are a video summarization expert. Create the perfect {target_seconds}-second highlight reel from this transcript.
 
 ## 🎯 TASK
-Select the BEST moments that tell the complete story in EXACTLY {target_seconds} seconds.
+Select the BEST moments that tell the complete story targeting {target_seconds} seconds total duration.
 
 ## 📋 SELECT THE BEST:
 - Key insights and important information
@@ -154,11 +173,11 @@ Select the BEST moments that tell the complete story in EXACTLY {target_seconds}
 - Problem-solution pairs
 
 ## ⏱️ CRITICAL REQUIREMENTS:
-- Total duration: EXACTLY {target_seconds} seconds (not more, not less)
-- Maximum 6 segments (not 38!)
-- Each segment: 8-15 seconds long
+- Total duration: Target {target_seconds} seconds (±10% acceptable)
+- Segment count: Aim for 4-8 segments (adjust based on target duration)
+- Each segment: 5-20 seconds long (longer segments OK for longer targets)
 - Spread across timeline (beginning, middle, end)
-- Quality over quantity - be VERY selective
+- Quality over quantity - be selective but comprehensive
 
 ## 🔍 QUALITY CHECKS
 Before selecting each highlight, ask:

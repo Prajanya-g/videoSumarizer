@@ -1,29 +1,54 @@
+/**
+ * Upload Page Component
+ * 
+ * Handles video file uploads and initiates the AI-powered summarization process.
+ * Provides a user-friendly interface for selecting files, setting parameters,
+ * and tracking upload progress.
+ */
+
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jobsApi } from '../api/jobs';
 
 const UploadPage: React.FC = () => {
+  // File selection state
   const [file, setFile] = useState<File | null>(null);
-  const [title, setTitle] = useState('');
-  const [targetSeconds, setTargetSeconds] = useState(60);
-  const [isUploading, setIsUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [error, setError] = useState<string | null>(null);
-  const [jobId, setJobId] = useState<number | null>(null);
+  
+  // Job configuration state
+  const [title, setTitle] = useState('');  // Optional job title
+  const [targetSeconds, setTargetSeconds] = useState(60);  // Target summary duration
+  
+  // Upload process state
+  const [isUploading, setIsUploading] = useState(false);  // Upload in progress flag
+  const [uploadProgress, setUploadProgress] = useState(0);  // Progress percentage
+  const [error, setError] = useState<string | null>(null);  // Error message
+  const [jobId, setJobId] = useState<number | null>(null);  // Created job ID
   
   const navigate = useNavigate();
 
+  /**
+   * Handle file selection from input element.
+   * 
+   * Validates file selection and clears any previous errors.
+   */
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       setFile(selectedFile);
-      setError(null);
+      setError(null);  // Clear any previous errors
     }
   };
 
+  /**
+   * Handle form submission for video upload.
+   * 
+   * Validates file selection, shows upload progress, and creates a new job.
+   * Redirects to job detail page upon successful upload.
+   */
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Validate file selection
     if (!file) {
       setError('Please select a video file');
       return;
@@ -34,17 +59,18 @@ const UploadPage: React.FC = () => {
       setError(null);
       setUploadProgress(0);
 
-      // Simulate upload progress
+      // Simulate upload progress for better UX
       const progressInterval = setInterval(() => {
         setUploadProgress(prev => {
           if (prev >= 90) {
             clearInterval(progressInterval);
-            return 90;
+            return 90;  // Stop at 90% until actual upload completes
           }
           return prev + 10;
         });
       }, 200);
 
+      // Create job with file and configuration
       const job = await jobsApi.createJob(file, {
         title: title || undefined,
         target_seconds: targetSeconds || 60
@@ -67,6 +93,65 @@ const UploadPage: React.FC = () => {
     } finally {
       setIsUploading(false);
     }
+  };
+
+  /**
+   * Render the appropriate upload state component.
+   * 
+   * Returns the correct UI based on current upload state (uploading, completed, or null).
+   */
+  const renderUploadState = () => {
+    if (isUploading) {
+      return (
+        <div className="text-center">
+          <div className="mb-4">
+            <div className="w-16 h-16 mx-auto mb-4">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
+            </div>
+            <h3 className="text-lg font-medium text-gray-900 mb-2">
+              Uploading Video...
+            </h3>
+            <p className="text-gray-600 mb-4">
+              Please wait while we upload and process your video
+            </p>
+          </div>
+          
+          <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
+            <div
+              className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
+              style={{ width: `${uploadProgress}%` }}
+            ></div>
+          </div>
+          
+          <p className="text-sm text-gray-500">
+            {uploadProgress}% complete
+          </p>
+        </div>
+      );
+    }
+
+    if (jobId) {
+      return (
+        <div className="text-center">
+          <div className="text-green-600 mb-4">
+            <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Upload Complete!
+          </h3>
+          <p className="text-gray-600 mb-4">
+            Your video is being processed. Redirecting to detail page...
+          </p>
+          <div className="animate-pulse">
+            <div className="w-8 h-8 mx-auto bg-indigo-600 rounded-full"></div>
+          </div>
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const handleBack = () => {
@@ -99,19 +184,19 @@ const UploadPage: React.FC = () => {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* File Upload */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="fileInput" className="block text-sm font-medium text-gray-700 mb-2">
                   Video File
                 </label>
                 <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
                   <input
+                    id="fileInput"
                     type="file"
                     accept="video/*"
                     onChange={handleFileChange}
                     className="hidden"
-                    id="file-upload"
                   />
                   <label
-                    htmlFor="file-upload"
+                    htmlFor="fileInput"
                     className="cursor-pointer"
                   >
                     {file ? (
@@ -201,49 +286,7 @@ const UploadPage: React.FC = () => {
                 Upload and Process Video
               </button>
             </form>
-          ) : isUploading ? (
-            <div className="text-center">
-              <div className="mb-4">
-                <div className="w-16 h-16 mx-auto mb-4">
-                  <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-indigo-600"></div>
-                </div>
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Uploading Video...
-                </h3>
-                <p className="text-gray-600 mb-4">
-                  Please wait while we upload and process your video
-                </p>
-              </div>
-              
-              <div className="w-full bg-gray-200 rounded-full h-2 mb-4">
-                <div
-                  className="bg-indigo-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${uploadProgress}%` }}
-                ></div>
-              </div>
-              
-              <p className="text-sm text-gray-500">
-                {uploadProgress}% complete
-              </p>
-            </div>
-          ) : jobId ? (
-            <div className="text-center">
-              <div className="text-green-600 mb-4">
-                <svg className="w-16 h-16 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Upload Complete!
-              </h3>
-              <p className="text-gray-600 mb-4">
-                Your video is being processed. Redirecting to detail page...
-              </p>
-              <div className="animate-pulse">
-                <div className="w-8 h-8 mx-auto bg-indigo-600 rounded-full"></div>
-              </div>
-            </div>
-          ) : null}
+          ) : renderUploadState()}
         </div>
       </div>
     </div>

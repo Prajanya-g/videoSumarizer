@@ -195,10 +195,11 @@ class VideoSummarizerPipeline:
         # Calculate total duration
         total_duration = sum(seg.get("end", 0) - seg.get("start", 0) for seg in segments)
         
-        # If duration is way over target, take only the top segments
+        logger.info(f"GPT selected {len(segments)} segments with {total_duration:.1f}s duration (target: {target_seconds}s)")
+        
+        # If duration is significantly over target, reduce segments
         if total_duration > target_seconds * 1.5:  # 50% over target
-            logger.warning(f"GPT selected {len(segments)} segments with {total_duration:.1f}s duration (target: {target_seconds}s)")
-            logger.warning("Taking only the top segments to meet duration requirements")
+            logger.warning("Duration significantly over target - reducing segments")
             
             # Sort by score and take top segments until we're close to target
             sorted_segments = sorted(segments, key=lambda x: x.get("score", 0), reverse=True)
@@ -217,6 +218,20 @@ class VideoSummarizerPipeline:
             logger.info(f"Final duration: {current_duration:.1f}s (target: {target_seconds}s)")
             return validated_segments
         
+        # If duration is significantly under target, try to add more segments
+        elif total_duration < target_seconds * 0.5:  # Less than 50% of target
+            logger.warning(f"Duration significantly under target: {total_duration:.1f}s vs {target_seconds}s")
+            logger.warning("This may indicate GPT selection issues or insufficient content")
+            logger.warning("Consider adjusting the prompt or checking video content quality")
+            # Note: We don't modify segments here as it would require re-running GPT
+            # This is a limitation that should be addressed in the GPT prompt
+        
+        # If duration is moderately under target, warn
+        elif total_duration < target_seconds * 0.8:  # Less than 80% of target
+            logger.warning(f"Duration under target: {total_duration:.1f}s vs {target_seconds}s")
+            logger.warning("GPT may have been too selective - consider reviewing selection criteria")
+        
+        logger.info(f"Final duration: {total_duration:.1f}s (target: {target_seconds}s)")
         return segments
     
     async def _export_highlights(self, input_video: str, segments: list) -> str:

@@ -21,7 +21,7 @@ install:
 
 # Start development server
 dev:
-	python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+	./venv/bin/python -m uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Run tests
 test:
@@ -64,13 +64,13 @@ restart:
 
 # Database operations
 db-init:
-	python init_database.py
+	./venv/bin/python init_database.py
 
 db-reset:
 	docker-compose down -v
 	docker-compose up -d db
 	sleep 10
-	python init_database.py
+	./venv/bin/python init_database.py
 
 # Production deployment
 prod-deploy:

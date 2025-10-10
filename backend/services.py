@@ -1,5 +1,9 @@
 """
 Service layer for database operations.
+
+This module contains the business logic layer that handles all database
+operations for users and jobs. It provides a clean interface between
+the API endpoints and the database models.
 """
 
 from sqlalchemy.orm import Session
@@ -7,26 +11,40 @@ from typing import Optional, List
 from backend.schemas import User, Job, JobStatus
 from backend.models import UserCreate, UserLogin, UserUpdate, UserDelete, JobCreate, JobUpdate, JobDelete, JobResponse, JobListQuery
 from backend.auth import hash_password, verify_password
-from datetime import datetime, timezone
 import os
 
+# =============================================================================
+# USER SERVICE - Handles user authentication and profile management
+# =============================================================================
+
 class UserService:
-    """Service for user operations."""
+    """
+    Service class for user-related database operations.
     
-    @staticmethod
-    def hash_password(password: str) -> str:
-        """Hash a password."""
-        return hash_password(password)
+    Provides methods for user creation, authentication, profile updates,
+    and account management with proper password hashing and validation.
+    """
     
-    @staticmethod
-    def verify_password(plain_password: str, hashed_password: str) -> bool:
-        """Verify a password against its hash."""
-        return verify_password(plain_password, hashed_password)
     
     @staticmethod
     def create_user(db: Session, user_data: UserCreate) -> User:
-        """Create a new user."""
-        hashed_password = UserService.hash_password(user_data.password)
+        """
+        Create a new user account.
+        
+        Hashes the password and stores user information in the database.
+        
+        Args:
+            db: Database session
+            user_data: User creation data (email, password, full_name)
+            
+        Returns:
+            User: Created user object
+            
+        Raises:
+            IntegrityError: If email already exists
+        """
+        # Hash password before storing
+        hashed_password = hash_password(user_data.password)
         db_user = User(
             email=user_data.email,
             hashed_password=hashed_password,
@@ -68,7 +86,7 @@ class UserService:
         user = UserService.get_user_by_email(db, email)
         if not user:
             return None
-        if not UserService.verify_password(password, str(user.hashed_password)):
+        if not verify_password(password, str(user.hashed_password)):
             return None
         return user
     
@@ -110,18 +128,40 @@ class UserService:
         db.commit()
         return True
 
+# =============================================================================
+# JOB SERVICE - Handles video processing job management
+# =============================================================================
+
 class JobService:
-    """Service for job operations."""
+    """
+    Service class for job-related database operations.
+    
+    Provides methods for job creation, status updates, file path management,
+    and job listing with filtering and pagination support.
+    """
     
     @staticmethod
     def create_job(db: Session, user_id: int, job_data: JobCreate, original_filename: Optional[str] = None) -> Job:
-        """Create a new job."""
+        """
+        Create a new video processing job.
+        
+        Initializes a job record with UPLOADED status and user ownership.
+        
+        Args:
+            db: Database session
+            user_id: ID of the user creating the job
+            job_data: Job configuration (title, target_seconds)
+            original_filename: Name of the uploaded file
+            
+        Returns:
+            Job: Created job object
+        """
         db_job = Job(
             user_id=user_id,
             title=job_data.title,
             target_seconds=job_data.target_seconds,
             original_filename=original_filename,
-            status=JobStatus.UPLOADED
+            status=JobStatus.UPLOADED  # Initial status
         )
         db.add(db_job)
         db.commit()

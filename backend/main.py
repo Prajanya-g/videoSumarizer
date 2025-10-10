@@ -1,5 +1,8 @@
 """
 FastAPI main application for video summarizer service.
+
+This module contains the main FastAPI application with all API endpoints
+for user authentication, video upload, job management, and file serving.
 """
 
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, Depends, status
@@ -24,15 +27,23 @@ from sqlalchemy.orm import Session
 from backend.logging_config import setup_logging, get_logger
 from backend.config import settings
 
-# Set up logging
+# =============================================================================
+# APPLICATION INITIALIZATION
+# =============================================================================
+
+# Set up logging configuration
 setup_logging()
 logger = get_logger(__name__)
 
-# Constants
+# Application constants
 USER_NOT_FOUND_MESSAGE = "User not found"
 
-# Initialize database tables
+# Initialize database tables on startup
 create_tables()
+
+# =============================================================================
+# FASTAPI APPLICATION CONFIGURATION
+# =============================================================================
 
 app = FastAPI(
     title=settings.API_TITLE,
@@ -58,10 +69,11 @@ app = FastAPI(
     ]
 )
 
-# Security
+# JWT Bearer token authentication
 security = HTTPBearer()
 
 # CORS middleware for frontend communication
+# Allows cross-origin requests from the React frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.get_cors_origins(),
@@ -70,15 +82,25 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Serve static files from data/jobs directory
+# Mount static file serving for processed videos and assets
+# Serves files from the data/jobs directory at /files endpoint
 app.mount("/files", StaticFiles(directory="data/jobs"), name="files")
 
-# Authentication helper functions
+# =============================================================================
+# AUTHENTICATION AND HELPER FUNCTIONS
+# =============================================================================
+
 def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security), db: Session = Depends(get_db)):
-    """Get current authenticated user from JWT token."""
+    """
+    Authentication dependency to get current user from JWT token.
+    
+    Extracts user information from the JWT token and validates the user exists.
+    Used as a dependency in protected endpoints.
+    """
     token = credentials.credentials
     user_info = get_user_from_token(token)
     
+    # Fetch user from database using token payload
     user = UserService.get_user_by_id(db, user_info["user_id"])
     if not user:
         raise HTTPException(status_code=401, detail=USER_NOT_FOUND_MESSAGE)
@@ -86,26 +108,38 @@ def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(securit
     return user
 
 def get_job_dir(job_id: str) -> Path:
-    """Get the directory for a specific job."""
+    """
+    Get or create the directory for a specific job's files.
+    
+    Creates a unique directory structure for each job to store all processing files.
+    """
     job_dir = Path(f"data/jobs/{job_id}")
     job_dir.mkdir(parents=True, exist_ok=True)
     return job_dir
 
-# Old job state functions removed - now using database
+# =============================================================================
+# BACKGROUND PROCESSING
+# =============================================================================
 
 async def process_video_background(job_id: int, target_seconds: int):
-    """Background task to process video through the pipeline."""
+    """
+    Background task to process video through the AI pipeline.
+    
+    Runs asynchronously to avoid blocking the API response.
+    Handles the complete video processing workflow including transcription,
+    ranking, selection, and rendering.
+    """
     from backend.database import SessionLocal
     
     db = SessionLocal()
     try:
         logger.info(f"Background processing started for job: {job_id}")
         
-        # Update status to processing
+        # Update job status to processing
         JobService.update_job_status(db, job_id, JobStatus.PROCESSING)
         logger.info("Job status updated to 'processing'")
         
-        # Initialize and run the enhanced AI pipeline
+        # Initialize and run the AI-powered processing pipeline
         logger.info("Initializing AI-powered video processing pipeline...")
         pipeline = VideoSummarizerPipeline(job_id, db)
         await pipeline.run(target_seconds)
@@ -114,7 +148,7 @@ async def process_video_background(job_id: int, target_seconds: int):
             
     except Exception as e:
         logger.error(f"Background processing failed for job {job_id}: {str(e)}")
-        # Update status to failed
+        # Update job status to failed with error message
         JobService.update_job_status(db, job_id, JobStatus.FAILED, str(e))
         logger.error("Job status updated to 'failed'")
     finally:
@@ -300,6 +334,10 @@ async def delete_user_account(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Deletion failed: {str(e)}")
 
+# =============================================================================
+# VIDEO UPLOAD AND PROCESSING ENDPOINTS
+# =============================================================================
+
 @app.post("/upload", response_model=JobResponse)
 async def upload_video(
     file: UploadFile = File(...),
@@ -309,20 +347,38 @@ async def upload_video(
     db: Session = Depends(get_db)
 ):
     """
-    Upload a video file and start the summarization process.
+    Upload a video file and start the AI-powered summarization process.
+    
+    This endpoint handles video file uploads and initiates the background
+    processing pipeline. The video will be transcribed, analyzed by AI,
+    and summarized according to the target duration.
+    
+    Args:
+        file: Video file to process (must be a valid video format)
+        target_seconds: Desired duration for the summary video (default: 60)
+        title: Optional title for the job
+        current_user: Authenticated user (from JWT token)
+        db: Database session
+    
+    Returns:
+        JobResponse: Job information with processing status and file URLs
+    
+    Raises:
+        HTTPException: If file is not a video or processing fails
     """
+    # Validate file type - must be a video
     if not file.content_type or not file.content_type.startswith('video/'):
         raise HTTPException(status_code=400, detail="File must be a video")
     
     try:
-        # Create job in database
+        # Create job record in database
         job_data = JobCreate(title=title, target_seconds=target_seconds)
         job = JobService.create_job(db, current_user.id, job_data, file.filename or "unknown")
         
-        # Create job directory
+        # Create unique directory for this job's files
         job_dir = get_job_dir(str(job.id))
         
-        # Save uploaded file
+        # Save uploaded video file to job directory
         input_path = job_dir / "input.mp4"
         async with aiofiles.open(input_path, "wb") as buffer:
             content = await file.read()
@@ -330,17 +386,18 @@ async def upload_video(
         
         job_id: int = job.id  # type: ignore # Get the actual integer value
         
-        # Update job with file paths
+        # Update job record with file path
         JobService.update_job_file_paths(db, job_id, {
             "input_file_path": str(input_path)
         })
         
-        # Start background processing pipeline
+        # Start background AI processing pipeline
+        # This runs asynchronously to avoid blocking the API response
         logger.info(f"Starting background processing for job: {job_id}")
         _background_task = asyncio.create_task(process_video_background(job_id, target_seconds))
         logger.info(f"Background task created for job: {job_id}")
         
-        # Return job response with URLs
+        # Return job information with computed file URLs
         return JobService.get_job_with_urls(db, job_id)
         
     except Exception as e:
