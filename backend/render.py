@@ -1,5 +1,15 @@
 """
 FFmpeg-based video rendering service with robust error handling.
+
+This module provides comprehensive video processing capabilities using FFmpeg:
+- Video concatenation and editing
+- Thumbnail generation with multiple fallback strategies
+- Audio extraction and processing
+- Video duration analysis
+- Quality optimization and format conversion
+
+The service is designed to be robust with multiple fallback strategies
+for different video formats and codecs.
 """
 
 import os
@@ -26,15 +36,27 @@ VERYFAST_PRESET = "veryfast"
 CRF_QUALITY = "23"
 
 class VideoRenderer:
-    """Service for rendering summary videos using FFmpeg."""
+    """
+    Service for rendering summary videos using FFmpeg.
+    
+    This class provides a comprehensive interface for video processing operations:
+    - Video concatenation with multiple strategies (stream copy vs re-encoding)
+    - Thumbnail generation with fallback methods
+    - Audio extraction and processing
+    - Video duration analysis using ffprobe
+    - Quality optimization and format conversion
+    
+    The renderer uses multiple fallback strategies to handle different video
+    formats, codecs, and edge cases robustly.
+    """
     
     def __init__(self, ffmpeg_path: str = "ffmpeg", ffprobe_path: str = "ffprobe"):
         """
-        Initialize the video renderer.
+        Initialize the video renderer with FFmpeg executables.
         
         Args:
-            ffmpeg_path: Path to ffmpeg executable
-            ffprobe_path: Path to ffprobe executable
+            ffmpeg_path: Path to ffmpeg executable (default: "ffmpeg" from PATH)
+            ffprobe_path: Path to ffprobe executable (default: "ffprobe" from PATH)
         """
         self.ffmpeg_path = ffmpeg_path
         self.ffprobe_path = ffprobe_path
@@ -218,27 +240,38 @@ class VideoRenderer:
         """
         Create a thumbnail at time t with robust error handling.
         
+        This method uses a two-tier approach for thumbnail generation:
+        1. First attempts optimized method with MJPEG encoding
+        2. Falls back to re-encoding if the first method fails
+        
+        The method ensures proper JPEG format output that can be opened
+        by standard image viewers and web browsers.
+        
         Args:
-            input_video: Path to input video
-            t: Time in seconds for thumbnail
-            out_path: Output path for thumbnail
+            input_video: Path to input video file
+            t: Time in seconds where thumbnail should be extracted
+            out_path: Output path for the thumbnail image
             
         Returns:
-            Path to the thumbnail file
+            str: Path to the created thumbnail file
+            
+        Raises:
+            Exception: If both thumbnail generation methods fail
         """
         try:
-            # Ensure output directory exists
+            # Ensure output directory exists to prevent file creation errors
             Path(out_path).parent.mkdir(parents=True, exist_ok=True)
             
-            # First try with stream copy (fastest)
+            # First try optimized method with MJPEG encoding (fastest and most reliable)
             success = await self._thumbnail_with_copy(input_video, t, out_path)
             if success:
-                logger.info(f"Thumbnail created with stream copy: {out_path}")
+                logger.info(f"Thumbnail created with optimized method: {out_path}")
                 return out_path
             
-            # Fallback to re-encoding
+            # Fallback to re-encoding method if optimized approach fails
+            # This handles edge cases with certain video formats or codecs
             await self._thumbnail_with_reencode(input_video, t, out_path)
-            logger.info(f"Thumbnail created with re-encode: {out_path}")
+            logger.info(f"Thumbnail created with re-encode fallback: {out_path}")
             return out_path
             
         except Exception as e:
@@ -246,15 +279,31 @@ class VideoRenderer:
             raise
     
     async def _thumbnail_with_copy(self, input_video: str, t: float, out_path: str) -> bool:
-        """Try thumbnail creation with stream copy."""
+        """
+        Try thumbnail creation with optimized MJPEG settings.
+        
+        This method uses MJPEG encoding which is specifically designed for
+        JPEG image output. It's faster than re-encoding and produces
+        high-quality thumbnails that are compatible with all image viewers.
+        
+        Args:
+            input_video: Path to input video file
+            t: Time in seconds for thumbnail extraction
+            out_path: Output path for thumbnail
+            
+        Returns:
+            bool: True if successful, False if failed
+        """
         try:
             cmd = [
                 self.ffmpeg_path,
-                "-i", input_video,
-                "-ss", str(t),
-                "-vframes", "1",
-                "-c:v", "copy",
-                "-y",
+                "-i", input_video,           # Input video file
+                "-ss", str(t),               # Seek to specific time
+                "-vframes", "1",             # Extract only 1 frame
+                "-f", "image2",              # Force image format output
+                "-c:v", "mjpeg",             # Use MJPEG codec for JPEG output
+                "-q:v", "2",                 # High quality (1-31, lower = better)
+                "-y",                        # Overwrite output file
                 out_path
             ]
             
@@ -262,7 +311,7 @@ class VideoRenderer:
             return True
             
         except Exception as e:
-            logger.warning(f"Thumbnail stream copy failed: {str(e)}")
+            logger.warning(f"Optimized thumbnail creation failed: {str(e)}")
             return False
     
     async def _thumbnail_with_reencode(self, input_video: str, t: float, out_path: str) -> None:
@@ -272,6 +321,8 @@ class VideoRenderer:
             "-i", input_video,
             "-ss", str(t),
             "-vframes", "1",
+            "-f", "image2",
+            "-c:v", "mjpeg",
             "-q:v", "2",
             "-y",
             out_path

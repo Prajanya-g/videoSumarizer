@@ -159,6 +159,20 @@ class LLMRanker:
         """Create the prompt for LLM ranking."""
         segments_json = json.dumps(segments, indent=2)
         
+        # Calculate dynamic clip duration for the prompt
+        import math
+        base_duration = math.sqrt(target_seconds) * 0.8 + 2
+        if target_seconds <= 60:
+            ideal_duration = base_duration * 0.7
+        elif target_seconds <= 300:
+            ideal_duration = base_duration
+        else:
+            ideal_duration = base_duration * 1.2
+        ideal_duration = max(3.0, min(20.0, ideal_duration))
+        
+        # Calculate expected number of segments
+        expected_segments = int(target_seconds / ideal_duration)
+        
         return f"""You are a video summarization expert. Create the perfect {target_seconds}-second highlight reel from this transcript.
 
 ## 🎯 TASK
@@ -174,10 +188,23 @@ Select the BEST moments that tell the complete story targeting {target_seconds} 
 
 ## ⏱️ CRITICAL REQUIREMENTS:
 - Total duration: Target {target_seconds} seconds (±10% acceptable)
-- Segment count: Aim for 4-8 segments (adjust based on target duration)
-- Each segment: 5-20 seconds long (longer segments OK for longer targets)
+- Segment count: Aim for {expected_segments} segments for optimal pacing
+- Each segment: {ideal_duration:.1f} seconds long (dynamic duration based on target)
 - Spread across timeline (beginning, middle, end)
 - Quality over quantity - be selective but comprehensive
+
+## 🎬 HIGHLIGHT REEL STRATEGY
+- **Dynamic clip duration**: Target {ideal_duration:.1f}s clips for {target_seconds}s video (scales with duration)
+- **Optimal segment count**: {expected_segments} segments for perfect pacing
+- **Temporal diversity**: Spread segments across the entire video timeline
+- **Duration scaling**: Shorter clips for short videos, longer clips for long videos
+- **Story flow**: Ensure segments connect to tell a coherent story
+- **BALANCED COVERAGE**: Include content from beginning, middle, and end of video
+- **AVOID CLUSTERING**: Don't select multiple segments from the same time period
+- **COMPREHENSIVE VIEW**: Cover different topics/aspects discussed in the video
+- **CHUNK-BASED SELECTION**: System will divide video into equal chunks and select from each
+- **KEY PHRASES**: Focus on key phrases, product names, and important announcements
+- **SMART DURATION**: Each clip should be close to {ideal_duration:.1f}s for optimal pacing
 
 ## 🔍 QUALITY CHECKS
 Before selecting each highlight, ask:
@@ -193,6 +220,9 @@ Before selecting each highlight, ask:
 - **End (75-100%)**: Include conclusions, takeaways, and final thoughts
 - **Avoid clustering**: Don't select multiple segments from the same time period
 - **Balance coverage**: Ensure all major topics/aspects are represented
+- **COMPREHENSIVE COVERAGE**: For presentations like keynotes, include segments from different products/topics
+- **AVOID SINGLE-FOCUS**: Don't focus only on one product/topic - spread across the entire presentation
+- **TIMELINE DIVERSITY**: Ensure segments are spread across the full video duration, not clustered together
 
 ## 📊 OUTPUT FORMAT
 Return STRICT JSON only:

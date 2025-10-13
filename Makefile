@@ -8,6 +8,8 @@ help:
 	@echo "  install    - Install dependencies"
 	@echo "  dev        - Start development server"
 	@echo "  test       - Run tests"
+	@echo "  seed       - Seed database with sample data"
+	@echo "  evaluate   - Run AI feature evaluation"
 	@echo "  clean      - Clean up temporary files"
 	@echo "  build      - Build Docker image"
 	@echo "  deploy     - Deploy with Docker Compose"
@@ -26,6 +28,14 @@ dev:
 # Run tests
 test:
 	pytest -v
+
+# Seed database with sample data
+seed:
+	python seed_data.py
+
+# Run AI feature evaluation
+evaluate:
+	python evaluate_ai.py
 
 # Clean up temporary files
 clean:

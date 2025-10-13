@@ -229,10 +229,48 @@ class JobService:
         if not job:
             return False
         
-        # Delete job (files will be cleaned up by the system)
+        # Delete all associated files
+        JobService._cleanup_job_files(job)
+        
+        # Delete job from database
         db.delete(job)
         db.commit()
         return True
+    
+    @staticmethod
+    def _cleanup_job_files(job: Job) -> None:
+        """Clean up all files associated with a job."""
+        import os
+        import shutil
+        from pathlib import Path
+        from backend.logging_config import get_logger
+        logger = get_logger(__name__)
+        
+        # List of file path fields to check
+        file_fields = [
+            'input_file_path', 'audio_file_path', 'transcript_file_path',
+            'transcript_srt_path', 'highlights_file_path', 'thumbnail_file_path',
+            'jump_to_file_path', 'result_file_path'
+        ]
+        
+        # Delete individual files
+        for field in file_fields:
+            file_path = getattr(job, field, None)
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.unlink(file_path)
+                    logger.info(f"Deleted file: {file_path}")
+                except OSError as e:
+                    logger.warning(f"Failed to delete file {file_path}: {e}")
+        
+        # Delete the entire job directory if it exists
+        job_dir = Path(f"data/jobs/{job.id}")
+        if job_dir.exists():
+            try:
+                shutil.rmtree(job_dir)
+                logger.info(f"Deleted job directory: {job_dir}")
+            except OSError as e:
+                logger.warning(f"Failed to delete job directory {job_dir}: {e}")
     
     @staticmethod
     def update_job_status(db: Session, job_id: int, status: JobStatus, error_message: Optional[str] = None) -> Optional[Job]:
@@ -268,25 +306,6 @@ class JobService:
         for field, path in file_paths.items():
             if hasattr(job, field):
                 update_data[field] = path
-        
-        if update_data:
-            db.query(Job).filter(Job.id == job_id).update(update_data)
-        db.commit()
-        db.refresh(job)
-        return job
-    
-    @staticmethod
-    def update_job_metadata(db: Session, job_id: int, metadata: dict) -> Optional[Job]:
-        """Update job metadata (duration, compression ratio, etc.)."""
-        job = JobService.get_job_by_id(db, job_id)
-        if not job:
-            return None
-        
-        # Update metadata fields using SQLAlchemy update
-        update_data = {}
-        for field, value in metadata.items():
-            if hasattr(job, field):
-                update_data[field] = value
         
         if update_data:
             db.query(Job).filter(Job.id == job_id).update(update_data)

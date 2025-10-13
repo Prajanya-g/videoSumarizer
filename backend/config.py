@@ -79,8 +79,8 @@ class Settings:
     
     # Processing Configuration
     DEFAULT_TARGET_SECONDS = 60
-    MAX_TARGET_SECONDS = 300
-    MIN_TARGET_SECONDS = 10
+    MAX_TARGET_SECONDS = 1800  # 30 minutes - allow longer videos
+    MIN_TARGET_SECONDS = 60    # 60 seconds minimum as requested
     
     # AI Configuration
     OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -132,6 +132,7 @@ class Settings:
 
 # Create settings instance
 settings = Settings()
+
 
 
 

@@ -370,6 +370,18 @@ async def upload_video(
     if not file.content_type or not file.content_type.startswith('video/'):
         raise HTTPException(status_code=400, detail="File must be a video")
     
+    # Validate target duration limits
+    if target_seconds < settings.MIN_TARGET_SECONDS:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Target duration must be at least {settings.MIN_TARGET_SECONDS} seconds"
+        )
+    if target_seconds > settings.MAX_TARGET_SECONDS:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Target duration cannot exceed {settings.MAX_TARGET_SECONDS} seconds"
+        )
+    
     try:
         # Create job record in database
         job_data = JobCreate(title=title, target_seconds=target_seconds)
@@ -454,6 +466,19 @@ async def update_job(
     Update a job (title or target_seconds).
     """
     try:
+        # Validate target duration if provided
+        if job_data.target_seconds is not None:
+            if job_data.target_seconds < settings.MIN_TARGET_SECONDS:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Target duration must be at least {settings.MIN_TARGET_SECONDS} seconds"
+                )
+            if job_data.target_seconds > settings.MAX_TARGET_SECONDS:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Target duration cannot exceed {settings.MAX_TARGET_SECONDS} seconds"
+                )
+        
         updated_job = JobService.update_job(db, job_id, current_user.id, job_data)
         if not updated_job:
             raise HTTPException(status_code=404, detail="Job not found or access denied")
